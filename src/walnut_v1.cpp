@@ -53,7 +53,7 @@ cv::Mat filter_septa(const cv::Mat& candidates,
     return out;
 }
 
-walnut::SliceArtifacts segment_v2(const walnut::fs::path& path) {
+walnut::SliceArtifacts segment_v1(const walnut::fs::path& path) {
     using namespace walnut;
 
     SliceArtifacts out;
@@ -194,7 +194,7 @@ walnut::SliceArtifacts segment_v2(const walnut::fs::path& path) {
 
 int run_batch(const walnut::fs::path& dataset_root, const walnut::fs::path& gt_root, const walnut::fs::path& results_root) {
     for (const auto& pair : walnut::collect_pairs(dataset_root, gt_root)) {
-        walnut::save_artifacts(results_root / pair.id, segment_v2(pair.image));
+        walnut::save_artifacts(results_root / pair.id, segment_v1(pair.image));
     }
     return 0;
 }
@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
         const walnut::fs::path results = walnut::arg_value(argc, argv, "--results");
 
         if (!input.empty() && !output.empty()) {
-            walnut::save_artifacts(output, segment_v2(input));
+            walnut::save_artifacts(output, segment_v1(input));
             return 0;
         }
         if (!dataset.empty() && !gt_dir.empty() && !results.empty()) {
@@ -218,8 +218,8 @@ int main(int argc, char** argv) {
         }
 
         std::cerr << "Usage:\n"
-                  << "  walnut_v2 --input <slice.tiff> --output <dir>\n"
-                  << "  walnut_v2 --dataset <Reconstructions> --gt-dir <gt_final> --results <results/v2>\n";
+                  << "  walnut_v1 --input <slice.tiff> --output <dir>\n"
+                  << "  walnut_v1 --dataset <Reconstructions> --gt-dir <gt_final> --results <results/v1>\n";
         return 1;
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n';
