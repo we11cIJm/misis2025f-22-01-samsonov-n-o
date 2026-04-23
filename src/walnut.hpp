@@ -13,7 +13,6 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-
 #include <opencv2/opencv.hpp>
 
 namespace walnut {

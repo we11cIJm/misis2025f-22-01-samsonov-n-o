@@ -1,5 +1,4 @@
 #include "walnut.hpp"
-
 #include <iostream>
 
 namespace {
