@@ -12,6 +12,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 #include <opencv2/opencv.hpp>
 
@@ -27,6 +28,7 @@ struct SliceArtifacts {
     cv::Mat kernel;
     cv::Mat septa;
     cv::Mat labels;
+    std::vector<std::pair<std::string, cv::Mat>> debug_pngs;
 };
 
 struct PairInfo {
@@ -309,17 +311,46 @@ inline cv::Mat overlay_labels(const cv::Mat& gray, const cv::Mat& labels) {
     return out;
 }
 
+inline void add_debug_png(SliceArtifacts& art, std::string name, const cv::Mat& image) {
+    art.debug_pngs.push_back({std::move(name), image.clone()});
+}
+
+inline cv::Mat png_ready(const cv::Mat& image) {
+    if (image.empty()) {
+        return {};
+    }
+    if (image.depth() == CV_8U) {
+        return image;
+    }
+    cv::Mat out;
+    image.convertTo(out, CV_MAKETYPE(CV_8U, image.channels()));
+    return out;
+}
+
+inline void write_image_checked(const fs::path& path, const cv::Mat& image) {
+    if (image.empty()) {
+        throw std::runtime_error("Cannot write empty image: " + path.string());
+    }
+    if (!cv::imwrite(path.string(), image)) {
+        throw std::runtime_error("Cannot write image: " + path.string());
+    }
+}
+
 inline void save_artifacts(const fs::path& out_dir, const SliceArtifacts& art) {
     fs::create_directories(out_dir);
-    cv::imwrite((out_dir / "01_gray.tiff").string(), art.gray);
-    cv::imwrite((out_dir / "02_filtered.tiff").string(), art.filtered);
-    cv::imwrite((out_dir / "03_nut_mask.tiff").string(), art.nut);
-    cv::imwrite((out_dir / "04_shell_mask.tiff").string(), art.shell);
-    cv::imwrite((out_dir / "05_kernel_mask.tiff").string(), art.kernel);
-    cv::imwrite((out_dir / "06_septa_mask.tiff").string(), art.septa);
-    cv::imwrite((out_dir / "07_labels_vis.tiff").string(), color_labels(art.labels));
-    cv::imwrite((out_dir / "08_overlay.tiff").string(), overlay_labels(art.gray, art.labels));
-    cv::imwrite((out_dir / "09_labels_ids.tiff").string(), art.labels);
+    write_image_checked(out_dir / "01_gray.tiff", art.gray);
+    write_image_checked(out_dir / "02_filtered.tiff", art.filtered);
+    write_image_checked(out_dir / "03_nut_mask.tiff", art.nut);
+    write_image_checked(out_dir / "04_shell_mask.tiff", art.shell);
+    write_image_checked(out_dir / "05_kernel_mask.tiff", art.kernel);
+    write_image_checked(out_dir / "06_septa_mask.tiff", art.septa);
+    write_image_checked(out_dir / "07_labels_vis.tiff", color_labels(art.labels));
+    write_image_checked(out_dir / "08_overlay.tiff", overlay_labels(art.gray, art.labels));
+    write_image_checked(out_dir / "09_labels_ids.tiff", art.labels);
+
+    for (const auto& item : art.debug_pngs) {
+        write_image_checked(out_dir / (item.first + ".png"), png_ready(item.second));
+    }
 }
 
 inline std::vector<PairInfo> collect_pairs(const fs::path& dataset_root, const fs::path& gt_root) {
